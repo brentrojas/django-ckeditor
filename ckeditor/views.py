@@ -5,6 +5,8 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import render_to_response
 from django.template import RequestContext
+from django.core.files.storage import default_storage
+import time
 
 try:
     from PIL import Image, ImageOps
@@ -109,20 +111,28 @@ def upload(request):
     # Get the uploaded file from request.
     upload = request.FILES['upload']
     upload_ext = os.path.splitext(upload.name)[1]
-
-    # Open output file in which to store upload.
-    upload_filename = get_upload_filename(upload.name, request.user)
-    out = open(upload_filename, 'wb+')
-
-    # Iterate through chunks and write to destination.
-    for chunk in upload.chunks():
-        out.write(chunk)
-    out.close()
-
-    create_thumbnail(upload_filename)
-
-    # Respond with Javascript sending ckeditor upload url.
-    url = get_media_url(upload_filename)
+    
+    if getattr(settings, 'CKEDITOR_USE_DEFAULT_FILE_STORAGE', False):
+        upload_prefix = getattr(settings, 'CKEDITOR_DEFAULT_FILE_STORAGE_PREFIX', "")
+        upload_name = upload_prefix + '/' + str(int(time.time())) + '/' + upload.name
+        upload_name = upload_name.replace('//','/')
+        path = default_storage.save(upload_name, upload)
+        url = default_storage.url(path)
+    else:
+        
+        # Open output file in which to store upload.
+        upload_filename = get_upload_filename(upload.name, request.user)
+        out = open(upload_filename, 'wb+')
+    
+        # Iterate through chunks and write to destination.
+        for chunk in upload.chunks():
+            out.write(chunk)
+        out.close()
+    
+        create_thumbnail(upload_filename)
+    
+        # Respond with Javascript sending ckeditor upload url.
+        url = get_media_url(upload_filename)
     return HttpResponse("""
     <script type='text/javascript'>
         window.parent.CKEDITOR.tools.callFunction(%s, '%s');

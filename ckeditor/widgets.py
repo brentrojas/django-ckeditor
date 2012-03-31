@@ -19,6 +19,7 @@ DEFAULT_CONFIG = {
     'width': 618,
     'filebrowserWindowWidth': 940,
     'filebrowserWindowHeight': 747,
+    'filebrowserImageBrowseUrl':'',
 }
 
 
@@ -71,7 +72,9 @@ class CKEditorWidget(forms.Textarea):
             value = ''
         final_attrs = self.build_attrs(attrs, name=name)
         self.config['filebrowserUploadUrl'] = reverse('ckeditor_upload')
-        self.config['filebrowserBrowseUrl'] = reverse('ckeditor_browse')
+        self.config['filebrowserBrowseUrl'] = ''
+        self.config['filebrowserImageBrowseUrl'] = ''
+        
         return mark_safe(render_to_string('ckeditor/widget.html', {
             'final_attrs': flatatt(final_attrs),
             'value': conditional_escape(force_unicode(value)),
